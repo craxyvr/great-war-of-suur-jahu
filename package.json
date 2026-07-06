@@ -1,0 +1,9 @@
+{
+  "name": "great-war-of-suur-jahu",
+  "version": "1.0.0",
+  "description": "A strategy war game of territory conquest",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
