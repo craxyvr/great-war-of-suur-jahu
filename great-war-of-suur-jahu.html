@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Great War Of Suur Jahu</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0a12;font-family:'Segoe UI',Arial,sans-serif;color:#fff;user-select:none;-webkit-user-select:none}
+canvas{display:block}
+#gameCanvas{position:absolute;top:0;left:0;width:100%;height:100%}
+
+.screen{position:absolute;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+.screen.active{display:flex}
+
+#menuScreen{background:linear-gradient(135deg,#0a0a1a 0%,#1a1a3a 50%,#0a0a1a 100%)}
+#menuScreen h1{font-size:3em;color:#ff4444;text-shadow:0 0 40px rgba(255,68,68,0.4);margin-bottom:8px;text-align:center;line-height:1.2}
+#menuScreen .sub{font-size:1em;color:#667;margin-bottom:35px}
+#menuScreen .menu-btn{background:linear-gradient(135deg,#2a2a4a,#1a1a3a);border:2px solid #ff4444;color:#fff;padding:14px 50px;font-size:1.2em;cursor:pointer;border-radius:8px;transition:all .3s;margin:5px;min-width:200px}
+#menuScreen .menu-btn:hover{background:#ff4444;transform:scale(1.05);box-shadow:0 0 30px rgba(255,68,68,0.3)}
+
+#mapSelectScreen{background:linear-gradient(135deg,#0a0a1a,#1a1a3a)}
+#mapSelectScreen h2{font-size:2em;color:#ff4444;margin-bottom:25px;text-shadow:0 0 20px rgba(255,68,68,0.3)}
+.map-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;max-width:960px;width:90%;padding:10px}
+.map-card{background:linear-gradient(135deg,#1a1a3a,#2a2a4a);border:2px solid #334;border-radius:12px;padding:16px;cursor:pointer;transition:all .3s;text-align:center}
+.map-card:hover{transform:translateY(-4px);border-color:#ff4444;box-shadow:0 8px 30px rgba(255,68,68,0.15)}
+.map-card .prev-wrap{width:100%;height:110px;background:#0a0a1a;border-radius:6px;margin-bottom:10px;overflow:hidden;position:relative}
+.map-card .mn{font-size:1.1em;font-weight:bold;margin-bottom:4px}
+.map-card .md{font-size:.8em;color:#8899aa;margin-bottom:4px}
+.map-card .mc{font-size:.75em;color:#556}
+.map-back{position:absolute;top:18px;left:18px;background:transparent;border:2px solid #556;color:#8899aa;padding:8px 22px;cursor:pointer;border-radius:6px;font-size:.95em;transition:all .3s;z-index:5}
+.map-back:hover{border-color:#ff4444;color:#ff4444}
+
+#pickOverlay{position:absolute;top:0;left:0;width:100%;height:100%;z-index:15;display:none;pointer-events:none}
+#pickOverlay.active{display:block}
+#pickOverlay .pick-bg{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);pointer-events:none}
+#pickPanel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,#1a1a3a,#2a2a4a);border:2px solid #556;border-radius:16px;padding:25px 35px;text-align:center;min-width:300px;box-shadow:0 20px 60px rgba(0,0,0,0.6);pointer-events:auto}
+#pickPanel h2{font-size:1.6em;margin-bottom:6px}
+#pickPanel .pp-desc{color:#8899aa;font-size:.9em;margin-bottom:12px}
+#pickPanel .pp-stats{display:flex;justify-content:center;gap:10px;margin:12px 0;flex-wrap:wrap}
+#pickPanel .pp-stat{display:flex;flex-direction:column;align-items:center;background:rgba(0,0,0,0.4);padding:6px 10px;border-radius:6px;min-width:50px}
+#pickPanel .pp-stat .s-label{font-size:.65em;color:#667}
+#pickPanel .pp-stat .s-val{font-size:1.2em;font-weight:bold}
+#pickPanel .pp-btns{display:flex;gap:10px;justify-content:center;margin-top:14px}
+#pickPanel .pp-btns button{background:linear-gradient(135deg,#2a2a4a,#1a1a3a);border:2px solid #556;color:#fff;padding:10px 24px;cursor:pointer;border-radius:8px;font-size:.95em;transition:all .3s}
+#pickPanel .pp-btns button:hover{border-color:#ff4444}
+#pickPanel .pp-btns .play-btn{background:linear-gradient(135deg,#ff4444,#cc3333);border-color:#ff4444;font-weight:bold}
+#pickPanel .pp-btns .play-btn:hover{box-shadow:0 0 25px rgba(255,68,68,0.4)}
+#pickPanel .pick-hint{font-size:.85em;color:#667;margin-bottom:8px}
+
+.top-bar{position:absolute;top:8px;left:8px;right:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;z-index:8;pointer-events:none}
+.top-bar>*{pointer-events:auto}
+.top-bar .ci{background:rgba(8,8,25,0.88);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(8px)}
+.top-bar .ci .flag{width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);flex-shrink:0}
+.top-bar .ci .cname{font-weight:bold;font-size:.9em}
+.top-bar .st{display:flex;gap:6px;flex-wrap:wrap}
+.top-bar .st .s{display:flex;align-items:center;gap:3px;font-size:.72em;background:rgba(0,0,0,0.4);padding:3px 8px;border-radius:5px}
+.top-bar .st .s .ic{font-size:.85em}
+.top-bar .st .s .vl{font-weight:bold}
+
+.ctrl-bar{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;align-items:center;background:rgba(8,8,25,0.88);border:1px solid rgba(255,255,255,0.08);padding:6px 12px;border-radius:10px;backdrop-filter:blur(8px);z-index:8;pointer-events:none}
+.ctrl-bar>*{pointer-events:auto}
+.ctrl-bar button{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#ccc;padding:5px 12px;cursor:pointer;border-radius:5px;font-size:.8em;transition:all .2s;white-space:nowrap}
+.ctrl-bar button:hover{background:rgba(255,255,255,0.15);color:#fff}
+.ctrl-bar button.active{background:#ff4444;border-color:#ff4444;color:#fff}
+.ctrl-bar .sep{width:1px;height:20px;background:rgba(255,255,255,0.1)}
+
+.minimap-wrap{position:absolute;bottom:70px;right:10px;width:150px;height:100px;background:rgba(8,8,25,0.88);border:1px solid rgba(255,255,255,0.08);border-radius:7px;overflow:hidden;backdrop-filter:blur(8px);cursor:pointer;z-index:8;pointer-events:none}
+.minimap-wrap>*{pointer-events:auto}
+.minimap-wrap canvas{width:100%;height:100%}
+
+.info-panel{position:absolute;right:10px;top:70px;background:rgba(8,8,25,0.88);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;min-width:170px;max-width:200px;backdrop-filter:blur(8px);display:none;z-index:8;pointer-events:none}
+.info-panel>*{pointer-events:auto}
+.info-panel h3{font-size:.9em;margin-bottom:4px}
+.info-panel .ir{display:flex;justify-content:space-between;font-size:.75em;padding:2px 0;color:#b0b0c0}
+.info-panel .ir .il{color:#556}
+
+.dip-panel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,10,30,0.96);border:2px solid rgba(255,255,255,0.12);border-radius:14px;padding:22px;min-width:340px;max-width:90%;max-height:80vh;overflow-y:auto;backdrop-filter:blur(10px);display:none;z-index:20}
+.dip-panel h2{font-size:1.3em;margin-bottom:12px;color:#ff4444}
+.dip-panel .dr{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.dip-panel .dr:last-child{border-bottom:none}
+.dip-panel .dr .dn{font-weight:bold;display:flex;align-items:center;gap:7px;font-size:.9em}
+.dip-panel .dr .dn .dfl{width:14px;height:14px;border-radius:50%;display:inline-block}
+.dip-panel .dr .ds{font-size:.8em;padding:2px 8px;border-radius:4px}
+.dip-panel .dr .ds.war{color:#ff4444;border:1px solid rgba(255,68,68,0.3)}
+.dip-panel .dr .ds.allied{color:#4f4;border:1px solid rgba(68,255,68,0.3)}
+.dip-panel .dr .ds.peace{color:#8899aa;border:1px solid rgba(136,153,170,0.2)}
+.dip-panel .da{display:flex;gap:5px}
+.dip-panel .da button{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#ccc;padding:4px 10px;cursor:pointer;border-radius:4px;font-size:.7em;transition:all .2s}
+.dip-panel .da button:hover{background:rgba(255,255,255,0.15)}
+.dip-panel .da .bw{color:#ff4444;border-color:rgba(255,68,68,0.3)}
+.dip-panel .da .ba{color:#4f4;border-color:rgba(68,255,68,0.2)}
+.dip-panel .close-dip{position:absolute;top:10px;right:12px;background:transparent;border:none;color:#556;font-size:1.4em;cursor:pointer}
+.dip-panel .close-dip:hover{color:#ff4444}
+
+.war-confirm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,10,30,0.96);border:2px solid #ff4444;border-radius:10px;padding:22px 30px;text-align:center;z-index:25;display:none;min-width:260px}
+.war-confirm h3{color:#ff4444;margin-bottom:8px}
+.war-confirm p{margin-bottom:12px;color:#b0b0c0;font-size:.9em}
+.war-confirm button{background:#ff4444;border:none;color:#fff;padding:7px 22px;border-radius:5px;cursor:pointer;margin:0 5px;font-size:.9em}
+.war-confirm .wc-cancel{background:transparent;border:1px solid #556;color:#8899aa}
+
+.vic-screen{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:30}
+.vic-screen h2{font-size:2.8em;margin-bottom:8px}
+.vic-screen p{font-size:1.1em;color:#b0b0c0;margin-bottom:25px;text-align:center;padding:0 20px}
+.vic-screen button{background:linear-gradient(135deg,#2a2a4a,#1a1a3a);border:2px solid #ff4444;color:#fff;padding:12px 35px;font-size:1.1em;cursor:pointer;border-radius:7px;margin:4px;transition:all .3s;min-width:180px}
+.vic-screen button:hover{background:#ff4444;transform:scale(1.04)}
+
+@media(max-width:768px){
+  #menuScreen h1{font-size:2em}
+  .map-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+  .top-bar .ci{padding:4px 8px}
+  .top-bar .ci .cname{font-size:.8em}
+  .top-bar .st .s{font-size:.65em;padding:2px 6px}
+  .ctrl-bar{padding:4px 8px;gap:3px}
+  .ctrl-bar button{padding:3px 8px;font-size:.7em}
+  .minimap-wrap{width:110px;height:73px;bottom:60px;right:6px}
+  .info-panel{display:none!important}
+  .dip-panel{min-width:280px;padding:16px}
+  #pickPanel{padding:18px 22px;min-width:240px}
+  #pickPanel h2{font-size:1.3em}
+}
+</style>
+</head>
+<body>
+
+<div id="menuScreen" class="screen active">
+  <h1>⚔ GREAT WAR<br>OF SUUR JAHU</h1>
+  <div class="sub">A Strategy War Game of Territory Conquest</div>
+  <button class="menu-btn" onclick="showMapSelect()">▶ PLAY GAME</button>
+</div>
+
+<div id="mapSelectScreen" class="screen">
+  <button class="map-back" onclick="showMenu()">← BACK</button>
+  <h2>SELECT BATTLE MAP</h2>
+  <div class="map-grid" id="mapGrid"></div>
+</div>
+
+<div id="gameScreen" class="screen">
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="pickOverlay">
+    <div class="pick-bg"></div>
+    <div id="pickPanel">
+      <div class="pick-hint">Click a country on the map to select it</div>
+      <h2 id="pickTitle">-</h2>
+      <div class="pp-desc" id="pickDesc"></div>
+      <div class="pp-stats" id="pickStats"></div>
+      <div class="pp-btns" id="pickBtns">
+        <button class="play-btn" onclick="confirmPick()">PLAY AS THIS COUNTRY</button>
+        <button onclick="closePick()">CANCEL</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="top-bar" id="topBar" style="display:none">
+    <div class="ci">
+      <div class="flag" id="pFlag"></div>
+      <span class="cname" id="pName">-</span>
+    </div>
+    <div class="st">
+      <div class="s"><span class="ic">👤</span><span class="vl" id="statPop">0</span></div>
+      <div class="s"><span class="ic">💰</span><span class="vl" id="statMoney">0</span></div>
+      <div class="s"><span class="ic">⚔</span><span class="vl" id="statArmy">0</span></div>
+      <div class="s"><span class="ic">🏆</span><span class="vl" id="statTerr">0</span></div>
+    </div>
+  </div>
+
+  <div class="info-panel" id="infoPanel">
+    <h3 id="infoTitle">Territory</h3>
+    <div class="ir"><span class="il">Owner</span><span id="infoOwner">-</span></div>
+    <div class="ir"><span class="il">Army</span><span id="infoArmy">0</span></div>
+    <div class="ir"><span class="il">Income</span><span id="infoIncome">0</span></div>
+    <div class="ir"><span class="il">Type</span><span id="infoType">Land</span></div>
+  </div>
+
+  <div class="minimap-wrap" id="minimapWrap">
+    <canvas id="minimapCanvas"></canvas>
+  </div>
+
+  <div class="ctrl-bar">
+    <button onclick="togglePause()" id="pauseBtn">⏸ PAUSE</button>
+    <div class="sep"></div>
+    <button onclick="setSpeed(1)" id="sp1">1×</button>
+    <button onclick="setSpeed(2)" id="sp2">2×</button>
+    <button onclick="setSpeed(3)" id="sp3">3×</button>
+    <div class="sep"></div>
+    <button onclick="showDiplomacy()">🤝 DIPLOMACY</button>
+    <div class="sep"></div>
+    <button onclick="goMapSelect()">🗺 MAPS</button>
+    <button onclick="restartGame()">↻ RESTART</button>
+  </div>
+
+  <div class="dip-panel" id="dipPanel">
+    <button class="close-dip" onclick="closeDiplomacy()">✕</button>
+    <h2>DIPLOMACY</h2>
+    <div id="dipList"></div>
+  </div>
+
+  <div class="war-confirm" id="warConfirm">
+    <h3>⚔ DECLARE WAR</h3>
+    <p id="warText">Declare war?</p>
+    <button onclick="doDipAction()">CONFIRM</button>
+    <button class="wc-cancel" onclick="cancelWar()">CANCEL</button>
+  </div>
+
+  <div class="vic-screen" id="vicScreen">
+    <h2 id="vicTitle">🏆 VICTORY!</h2>
+    <p id="vicText">You have conquered all!</p>
+    <button onclick="goMapSelect()">🗺 MAP SELECT</button>
+    <button onclick="restartGame()">↻ PLAY AGAIN</button>
+    <button onclick="showMenu()">🏠 MAIN MENU</button>
+  </div>
+</div>
+
+<script>
+// ================================================================
+//  GREAT WAR OF SUUR JAHU  -  Complete Game Engine
+// ================================================================
+
+// ---- CONSTANTS ----
+const COUNTRIES = [
+  { id:0, name:"Suur Jahu",      color:"#e53935", atk:7,  def:7,  eco:6,  nav:5,  diff:"Normal" },
+  { id:1, name:"USSR",           color:"#fdd835", atk:8,  def:8,  eco:9,  nav:6,  diff:"Easy" },
+  { id:2, name:"Kaevatsi Laid",  color:"#43a047", atk:10, def:10, eco:10, nav:9,  diff:"Strongest" },
+  { id:3, name:"Olivers Laid",   color:"#1e88e5", atk:6,  def:9,  eco:6,  nav:10, diff:"Island Defense" }
+];
+const NC = COUNTRIES.length;
+const VW = 2400, VH = 1600;
+
+// ---- MAP DATA ----
+// Each territory: [name, [[x,y],...], ownerId, army, isCapital, dev, [neighborIndices], isWater]
+
+function t(name, pts, owner, army, cap, dev, nei, water) {
+  const cx = pts.reduce((s,p)=>s+p[0],0)/pts.length;
+  const cy = pts.reduce((s,p)=>s+p[1],0)/pts.length;
+  return { name, pts, center:[cx,cy], owner, army, isCapital:!!cap, dev:dev||1, neighbors:nei||[], isWater:!!water };
+}
+
+function sea(name, pts, nei) { return t(name, pts, -1, 0, false, 0, nei||[], true); }
+
+// ---- MAP 0: Baltic Front ----
+const MAP0 = [
+  t("Tallinn",[[500,280],[620,240],[720,270],[680,360],[540,350],[480,320]], 0,600,1,1.2,[1,4,5,10]),
+  t("Tartu",[[680,360],[820,320],[920,400],[880,500],[760,510],[660,440]], 0,400,0,1.0,[0,2,6,11]),
+  t("Pärnu",[[520,440],[660,440],[700,540],[600,620],[460,580],[440,500]], 0,350,0,0.9,[1,3,7,12]),
+  t("Narva",[[720,270],[850,220],[960,260],[940,350],[820,320]], 0,300,0,0.8,[0,5,10]),
+  t("Viljandi",[[460,580],[600,620],[640,700],[540,760],[420,700],[400,630]], 0,250,0,0.7,[2,7,8,13]),
+  t("Kaevatsi",[[660,180],[740,150],[790,190],[750,240],[670,230]], 2,700,1,1.5,[0,3,9]),
+  t("Kaev N",[[680,110],[760,80],[800,120],[760,160],[690,150]], 2,300,0,0.8,[5]),
+  t("Kaev S",[[640,250],[720,260],[740,300],[680,320],[620,290]], 2,300,0,0.8,[0,5]),
+  t("Kuressaare",[[180,380],[280,350],[340,400],[290,470],[190,450],[150,420]], 3,500,1,1.1,[14,15,0,2]),
+  t("Orissaare",[[280,300],[380,270],[430,320],[380,370],[300,360]], 3,250,0,0.7,[8,15,5]),
+  t("Kihelkonna",[[140,460],[200,490],[260,520],[220,570],[130,540]], 3,200,0,0.6,[8]),
+  t("Leningrad",[[960,260],[1080,190],[1220,220],[1260,320],[1100,360],[940,350]], 1,800,0,1.2,[3,11,16]),
+  t("Pskov",[[940,350],[1100,360],[1180,460],[1120,540],[960,500],[880,440]], 1,600,0,1.0,[1,10,12,17]),
+  t("Novgorod",[[1100,360],[1260,320],[1380,360],[1400,480],[1240,520],[1180,460]], 1,500,0,0.9,[10,11,16,17]),
+  t("Latvia",[[460,760],[640,700],[720,780],[680,880],[540,880],[420,820]], 1,500,0,0.8,[4,14,18]),
+  t("Lithuania",[[540,880],[680,880],[760,960],[700,1060],[520,1020],[420,960]], 1,400,0,0.7,[13,18]),
+  t("Moscow",[[1480,380],[1680,340],[1820,440],[1760,580],[1560,560],[1440,500]], 1,1200,0,1.5,[11,17,19]),
+  t("Smolensk",[[1320,520],[1520,480],[1620,600],[1500,720],[1280,680],[1240,600]], 1,600,0,1.0,[12,16,18,19]),
+  t("Belarus",[[1120,700],[1320,680],[1400,800],[1280,940],[1080,900],[1020,780]], 1,700,0,1.1,[12,17,20]),
+  t("Sea Link A",[[380,240],[450,220],[500,260],[460,310],[390,290]], -1,0,0,0,[8],1),
+  t("Sea Link B",[[550,180],[620,150],[680,200],[640,260],[570,240]], -1,0,0,0,[5,8],1),
+];
+
+// ---- MAP 1: Full USSR War ----
+const MAP1 = [
+  t("Tallinn",[[350,350],[480,300],[580,340],[550,440],[420,450],[320,400]],0,600,1,1.2,[1,3,8,12]),
+  t("Tartu",[[550,440],[680,400],[780,470],[730,570],[620,580],[520,520]],0,350,0,0.9,[0,2,4,13]),
+  t("Pärnu",[[420,550],[540,560],[580,660],[480,740],[360,700],[340,620]],0,300,0,0.8,[1,5,14]),
+  t("Narva",[[580,340],[720,300],[830,350],[800,440],[680,400]],0,250,0,0.7,[0,6,12]),
+  t("Kaevatsi",[[220,190],[300,160],[360,210],[320,270],[240,260],[200,230]],2,800,1,1.5,[0,7,8]),
+  t("K N",[[240,110],[320,80],[370,130],[330,170],[260,160]],2,250,0,0.7,[4]),
+  t("K S",[[190,280],[280,280],[300,330],[240,360],[170,330]],2,250,0,0.7,[4]),
+  t("Kuressaare",[[80,380],[170,350],[230,410],[180,490],[90,470],[50,430]],3,500,1,1.1,[0,4,9,10]),
+  t("Orissaare",[[170,300],[260,270],[310,320],[260,380],[190,360]],3,200,0,0.6,[7,10]),
+  t("Kihelkonna",[[50,490],[120,520],[180,560],[130,610],[40,580]],3,200,0,0.6,[7]),
+  t("Leningrad",[[830,350],[960,280],[1100,310],[1140,420],[980,460],[800,440]],1,900,0,1.2,[3,12,16]),
+  t("Pskov",[[800,440],[980,460],[1060,560],[1000,660],[840,640],[740,540]],1,600,0,1.0,[1,11,14,17]),
+  t("Novgorod",[[980,460],[1140,420],[1280,460],[1300,580],[1120,620],[1060,560]],1,500,0,0.9,[11,12,16,18]),
+  t("Latvia",[[640,680],[780,680],[860,780],[780,900],[620,880],[540,780]],1,500,0,0.8,[2,13,19]),
+  t("Lithuania",[[620,880],[780,900],[880,1000],[800,1120],[600,1080],[500,1000]],1,400,0,0.7,[14,19]),
+  t("Moscow",[[1480,500],[1680,450],[1820,550],[1760,700],[1560,680],[1440,620]],1,1500,0,1.5,[12,17,20]),
+  t("Smolensk",[[1280,600],[1480,560],[1580,680],[1460,800],[1260,760],[1220,680]],1,600,0,1.0,[11,15,18,20]),
+  t("Tver",[[1140,420],[1280,380],[1420,420],[1440,540],[1280,520],[1160,500]],1,400,0,0.8,[12,15,16]),
+  t("Belarus",[[1060,700],[1260,680],[1340,820],[1220,960],[1020,920],[940,800]],1,700,0,1.1,[13,17,21]),
+  t("Ural",[[1820,550],[2000,500],[2150,580],[2100,720],[1900,700],[1760,650]],1,800,0,1.0,[15,21]),
+  t("Siberia",[[2000,720],[2200,680],[2400,760],[2350,900],[2100,880],[1950,820]],1,600,0,0.6,[19,20]),
+  sea("Sea N",[[150,200],[280,160],[340,230],[220,280],[130,250]],[0,4,7]),
+];
+
+// ---- MAP 2: Island Battle ----
+const MAP2 = [
+  t("Tallinn",[[600,400],[720,360],[820,410],[780,510],[660,520],[560,480]],0,550,1,1.1,[1,2,3,10]),
+  t("Tartu",[[780,510],[900,470],[1000,530],[950,630],[830,640],[740,580]],0,300,0,0.8,[0,2,11]),
+  t("Pärnu",[[660,620],[780,640],[820,740],[720,820],[600,780],[580,700]],0,250,0,0.7,[0,1,12]),
+  t("Narva",[[720,360],[850,310],[960,360],[920,460],[820,410]],0,200,0,0.6,[0,4,10]),
+  t("Kaevatsi",[[450,250],[530,220],[590,270],[550,340],[470,330],[430,290]],2,900,1,1.6,[3,5,8,7]),
+  t("K N",[[470,160],[550,130],[610,180],[570,240],[490,230]],2,300,0,0.7,[4]),
+  t("K S",[[430,360],[510,360],[540,420],[480,470],[400,440]],2,300,0,0.7,[4]),
+  t("K W",[[350,210],[430,180],[470,240],[420,300],[340,280]],2,250,0,0.6,[4,8]),
+  t("Kuressaare",[[180,500],[270,470],[330,530],[280,610],[190,590],[150,550]],3,600,1,1.2,[9,10,2,4,7]),
+  t("Orissaare",[[270,400],[360,370],[420,430],[370,500],[290,490]],3,250,0,0.7,[8,10]),
+  t("Hiiumaa",[[120,350],[200,320],[260,380],[220,450],[130,430]],3,200,0,0.6,[0,8,9]),
+  t("Leningrad",[[960,360],[1080,300],[1220,340],[1260,450],[1100,500],[940,470]],1,800,0,1.2,[0,3,11,14]),
+  t("Pskov",[[940,470],[1100,500],[1180,600],[1120,700],[960,680],[880,580]],1,500,0,1.0,[1,10,12,15]),
+  t("Novgorod",[[1100,500],[1260,450],[1380,500],[1400,620],[1220,660],[1180,600]],1,400,0,0.9,[10,11,14,16]),
+  t("Latvia",[[820,740],[960,720],[1040,820],[960,940],[800,900],[720,820]],1,400,0,0.8,[2,12,17]),
+  t("Moscow",[[1480,440],[1680,400],[1820,500],[1760,640],[1560,620],[1440,560]],1,1200,0,1.5,[10,13,16,18]),
+  t("Tver",[[1260,450],[1400,420],[1540,460],[1560,580],[1380,600],[1360,540]],1,350,0,0.7,[13,14,15]),
+  t("Smolensk",[[1320,640],[1520,600],[1620,720],[1500,840],[1300,800],[1260,720]],1,500,0,1.0,[12,15,18,19]),
+  t("Belarus",[[1120,780],[1320,760],[1400,880],[1280,1020],[1080,980],[1020,860]],1,600,0,1.1,[14,17,20]),
+  t("Rostov",[[1620,720],[1820,680],[1960,780],[1880,920],[1680,880],[1580,800]],1,450,0,0.8,[16,18]),
+  sea("Channel",[[380,310],[460,280],[520,340],[480,400],[400,380]],[4,8,10]),
+];
+
+// ---- MAP 3: Great Europe Front ----
+const MAP3 = [
+  t("Tallinn",[[700,420],[820,380],[920,440],[880,550],[760,560],[660,510]],0,500,1,1.1,[1,2,3,9,12]),
+  t("Tartu",[[880,550],[1000,510],[1100,570],[1050,680],[930,690],[840,620]],0,300,0,0.8,[0,2,13]),
+  t("Pärnu",[[720,620],[840,640],[880,740],[780,820],[660,780],[640,700]],0,250,0,0.7,[0,1,14]),
+  t("Narva",[[820,380],[950,340],[1060,390],[1020,500],[920,440]],0,250,0,0.7,[0,4,12]),
+  t("Kaevatsi",[[520,260],[600,230],[660,280],[620,350],[540,340],[500,300]],2,1000,1,1.8,[3,5,6,9]),
+  t("K North",[[540,170],[620,140],[680,190],[640,250],[560,240]],2,350,0,0.8,[4]),
+  t("K South",[[500,380],[580,380],[610,440],[540,500],[460,470]],2,350,0,0.8,[4]),
+  t("K West",[[410,200],[490,170],[530,230],[480,290],[400,270]],2,300,0,0.7,[4,8]),
+  t("Kuressaare",[[140,560],[230,530],[290,590],[240,680],[150,660],[110,620]],3,700,1,1.3,[9,10,2,7]),
+  t("Orissaare",[[230,480],[320,450],[380,510],[330,580],[250,570]],3,300,0,0.7,[0,4,7,8]),
+  t("Saare W",[[60,440],[140,410],[200,470],[160,540],[70,520]],3,200,0,0.5,[8]),
+  t("Muhu",[[340,600],[420,570],[480,630],[430,700],[350,680]],3,200,0,0.6,[8,2]),
+  t("Leningrad",[[1060,390],[1180,330],[1320,370],[1360,480],[1200,530],[1040,490]],1,900,0,1.2,[3,12,17]),
+  t("Pskov",[[1040,490],[1200,530],[1280,630],[1220,740],[1060,720],[980,610]],1,600,0,1.0,[1,11,14,18]),
+  t("Novgorod",[[1200,530],[1360,480],[1500,530],[1520,650],[1340,690],[1280,630]],1,500,0,0.9,[12,13,17,19]),
+  t("Latvia",[[880,740],[1020,760],[1100,860],[1020,980],[860,940],[800,860]],1,500,0,0.8,[2,13,20]),
+  t("Moscow",[[1700,500],[1900,450],[2040,550],[1960,700],[1760,680],[1640,600]],1,1500,0,1.5,[13,16,19,22]),
+  t("Smolensk",[[1500,680],[1700,640],[1800,760],[1680,880],[1480,840],[1440,760]],1,600,0,1.0,[14,15,18,21]),
+  t("Tver",[[1360,480],[1500,440],[1640,490],[1660,610],[1500,620],[1460,560]],1,400,0,0.8,[13,16,17]),
+  t("Belarus",[[1220,800],[1420,780],[1500,900],[1380,1040],[1180,1000],[1120,880]],1,700,0,1.1,[14,17,22]),
+  t("Ural",[[1900,700],[2100,650],[2250,730],[2180,870],[1980,850],[1860,790]],1,800,0,1.0,[16,21,23]),
+  t("Siberia",[[2100,870],[2300,820],[2450,900],[2400,1050],[2150,1020],[2050,960]],1,600,0,0.6,[19,22]),
+  t("Vienna",[[1560,920],[1720,880],[1820,980],[1740,1100],[1580,1060],[1500,980]],1,500,0,0.9,[17,20,21]),
+  t("Kiev",[[1380,1040],[1580,1000],[1680,1120],[1520,1240],[1340,1180],[1280,1100]],1,600,0,1.0,[18,20]),
+  sea("Strait",[[380,310],[460,280],[520,340],[480,400],[400,380]],[4,8,9]),
+];
+
+const MAPS = [
+  { id:0, name:"Baltic Front", desc:"The original Baltic region. Estonia, islands, and the USSR frontier.", data:MAP0 },
+  { id:1, name:"Full USSR War", desc:"Massive USSR territory stretching east. Western countries fight for survival.", data:MAP1 },
+  { id:2, name:"Island Battle", desc:"Naval warfare focused. Islands, chokepoints, and sea routes dominate.", data:MAP2 },
+  { id:3, name:"Great Europe Front", desc:"Massive fictional Europe. USSR dominates east, Kaevatsi is small but OP.", data:MAP3 },
+];
+
+// ---- GLOBAL STATE ----
+let G = {
+  terrs: [],
+  countries: [],
+  diplomacy: null,
+  player: -1,
+  selected: -1,
+  hovered: -1,
+  attackFrom: -1,
+  mapIdx: 0,
+  paused: true,
+  speed: 1,
+  tickAcc: 0,
+  time: 0,
+  won: false,
+  lost: false,
+  turn: 0,
+  effects: [],
+  msgs: [],
+  camera: { x:1200, y:800, zoom:0.6, tx:1200, ty:800, tz:0.6 },
+  dragging: false,
+  dragSX:0, dragSY:0,
+  camSX:0, camSY:0,
+  keys: {},
+  picking: true,
+  lastPlayer: -1,
+};
+
+let canvas, ctx, mCanvas, mCtx;
+let W=800, H=600;
+
+// ---- SETUP ----
+function setup() {
+  canvas = document.getElementById('gameCanvas');
+  ctx = canvas.getContext('2d');
+  mCanvas = document.getElementById('minimapCanvas');
+  mCtx = mCanvas.getContext('2d');
+  resize();
+  window.addEventListener('resize', resize);
+  document.addEventListener('keydown', e=>{ G.keys[e.key]=1; if(e.key===' '||e.key==='p')togglePause(); if(e.key==='1')setSpeed(1); if(e.key==='2')setSpeed(2); if(e.key==='3')setSpeed(3); });
+  document.addEventListener('keyup', e=>{ G.keys[e.key]=0; });
+  initInput();
+  showMapSelect();
+  requestAnimationFrame(loop);
+}
+
+function resize() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = W;
+  canvas.height = H;
+  const mm = document.getElementById('minimapWrap');
+  const mw = mm ? mm.clientWidth||150 : 150;
+  const mh = mm ? mm.clientHeight||100 : 100;
+  mCanvas.width = mw;
+  mCanvas.height = mh;
+}
+
+// ---- HELPERS ----
+function polyCenter(pts) {
+  let x=0,y=0,n=pts.length;
+  for(const p of pts){x+=p[0];y+=p[1]}
+  return [x/n,y/n];
+}
+
+function ptInPoly(px,py,pts) {
+  let inside=false;
+  for(let i=0,j=pts.length-1;i<pts.length;j=i++){
+    const xi=pts[i][0],yi=pts[i][1],xj=pts[j][0],yj=pts[j][1];
+    if((yi>py)!==(yj>py)&&px<(xj-xi)*(py-yi)/(yj-yi)+xi) inside=!inside;
+  }
+  return inside;
+}
+
+function scrToWorld(sx,sy) {
+  const c=G.camera;
+  return [(sx-W/2)/c.zoom+c.x, (sy-H/2)/c.zoom+c.y];
+}
+function worldToScr(wx,wy) {
+  const c=G.camera;
+  return [(wx-c.x)*c.zoom+W/2, (wy-c.y)*c.zoom+H/2];
+}
+
+// ---- GAME INIT ----
+function initMap(idx) {
+  const md = MAPS[idx];
+  G.mapIdx = idx;
+  G.terrs = md.data.map((td,i)=>{
+    const cx = td.center ? td.center[0] : polyCenter(td.pts)[0];
+    const cy = td.center ? td.center[1] : polyCenter(td.pts)[1];
+    return {
+      id: i,
+      name: td.name,
+      pts: td.pts.map(p=>[p[0],p[1]]),
+      center: [cx,cy],
+      owner: td.owner,
+      army: td.army,
+      isCapital: !!td.isCapital,
+      dev: td.dev || 1,
+      neighbors: [...(td.neighbors||[])],
+      isWater: !!td.isWater
+    };
+  });
+  G.countries = COUNTRIES.map(c=>({
+    id:c.id, name:c.name, color:c.color, atk:c.atk, def:c.def, eco:c.eco, nav:c.nav, alive:true
+  }));
+  G.diplomacy = {
+    alliances: Array.from({length:NC},()=>new Set()),
+    wars: Array.from({length:NC},()=>new Set()),
+  };
+  G.player = -1;
+  G.selected = -1;
+  G.hovered = -1;
+  G.attackFrom = -1;
+  G.paused = true;
+  G.speed = 1;
+  G.tickAcc = 0;
+  G.time = 0;
+  G.won = false;
+  G.lost = false;
+  G.turn = 0;
+  G.effects = [];
+  G.msgs = [];
+  G.picking = true;
+  G.lastPlayer = -1;
+
+  // Center camera
+  let cx=0,cy=0,n=0;
+  for(const t of G.terrs) if(!t.isWater){cx+=t.center[0];cy+=t.center[1];n++}
+  if(n){cx/=n;cy/=n}
+  G.camera.x=G.camera.tx=cx;
+  G.camera.y=G.camera.ty=cy;
+  G.camera.zoom=G.camera.tz=0.6;
+
+  document.getElementById('vicScreen').style.display='none';
+  document.getElementById('dipPanel').style.display='none';
+  document.getElementById('warConfirm').style.display='none';
+  document.getElementById('topBar').style.display='none';
+  document.getElementById('infoPanel').style.display='none';
+  document.getElementById('pauseBtn').textContent='▶ PLAY';
+  setSpeed(1);
+}
+
+function startPlaying() {
+  G.picked = false;
+  G.paused = false;
+  G.selected = -1;
+  G.attackFrom = -1;
+  document.getElementById('topBar').style.display='flex';
+  document.getElementById('pickOverlay').classList.remove('active');
+  document.getElementById('infoPanel').style.display='none';
+  document.getElementById('pauseBtn').textContent='⏸ PAUSE';
+  addMsg('⚔ War begins! You are ' + COUNTRIES[G.player].name + '.');
+}
+
+// ---- LOCAL STORAGE ----
+function saveSettings() {
+  try {
+    localStorage.setItem('gwsj_map', G.mapIdx);
+    localStorage.setItem('gwsj_speed', G.speed);
+  } catch(e) {}
+}
+function loadSettings() {
+  try {
+    const m = localStorage.getItem('gwsj_map');
+    if (m !== null) return parseInt(m);
+  } catch(e) {}
+  return 0;
+}
+
+// ---- MAP SELECT SCREEN ----
+function showMenu() {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('menuScreen').classList.add('active');
+}
+function showMapSelect() {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('mapSelectScreen').classList.add('active');
+  const grid = document.getElementById('mapGrid');
+  grid.innerHTML='';
+  for(let i=0;i<MAPS.length;i++){
+    const m=MAPS[i];
+    const card=document.createElement('div');
+    card.className='map-card';
+    const pw=document.createElement('div');
+    pw.className='prev-wrap';
+    const pc=document.createElement('canvas');
+    pc.width=210;pc.height=110;
+    pc.style.width='100%';pc.style.height='100%';
+    pw.appendChild(pc);
+    card.appendChild(pw);
+    const mn=document.createElement('div');mn.className='mn';mn.textContent=m.name;card.appendChild(mn);
+    const md=document.createElement('div');md.className='md';md.textContent=m.desc;card.appendChild(md);
+    const mc=document.createElement('div');mc.className='mc';
+    const owners=new Set();
+    for(const t of m.data) if(t.owner>=0) owners.add(t.owner);
+    mc.textContent=[...owners].map(o=>COUNTRIES[o].name).join(' · ');
+    card.appendChild(mc);
+    card.onclick=()=>selectMap(i);
+    grid.appendChild(card);
+    drawMiniPreview(pc,m.data);
+  }
+}
+
+function drawMiniPreview(c,data){
+  const cx=c.getContext('2d');
+  const cw=c.width,ch=c.height;
+  cx.fillStyle='#0a1628';cx.fillRect(0,0,cw,ch);
+  const sx=cw/VW, sy=ch/VH;
+  for(const t of data){
+    if(!t.pts||t.pts.length<2)continue;
+    const col=t.owner>=0?COUNTRIES[t.owner].color:'#1a2a4a';
+    cx.fillStyle=t.isWater?'#0d1f3c':col;
+    cx.strokeStyle='rgba(255,255,255,0.2)';cx.lineWidth=0.5;
+    cx.beginPath();cx.moveTo(t.pts[0][0]*sx,t.pts[0][1]*sy);
+    for(let i=1;i<t.pts.length;i++)cx.lineTo(t.pts[i][0]*sx,t.pts[i][1]*sy);
+    cx.closePath();cx.fill();cx.stroke();
+  }
+}
+
+// ---- COUNTRY PICKING ----
+function selectMap(idx) {
+  initMap(idx);
+  saveSettings();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('gameScreen').classList.add('active');
+  document.getElementById('pickOverlay').classList.add('active');
+  document.getElementById('pickPanel').querySelector('.pick-hint').style.display='block';
+  document.getElementById('pickTitle').textContent='Click a country on the map';
+  document.getElementById('pickDesc').textContent='';
+  document.getElementById('pickStats').innerHTML='';
+  document.getElementById('pickBtns').style.display='none';
+  resize();
+}
+
+function getTerrAt(sx,sy){
+  const [wx,wy]=scrToWorld(sx,sy);
+  for(let i=G.terrs.length-1;i>=0;i--){
+    const t=G.terrs[i];
+    if(t.isWater||t.owner<0)continue;
+    if(ptInPoly(wx,wy,t.pts))return i;
+  }
+  return -1;
+}
+
+function onCanvasClick(sx,sy){
+  if(G.picking){
+    const tid=getTerrAt(sx,sy);
+    if(tid>=0){
+      const t=G.terrs[tid];
+      const cid=t.owner;
+      const cc=COUNTRIES[cid];
+      document.getElementById('pickTitle').textContent='Pick Country: '+cc.name;
+      const nterr=G.terrs.filter(x=>x.owner===cid&&!x.isWater).length;
+      document.getElementById('pickDesc').textContent=cc.diff+' · '+nterr+' territories';
+      document.getElementById('pickStats').innerHTML=
+        '<div class="pp-stat"><span class="s-label">ATK</span><span class="s-val" style="color:'+cc.color+'">'+cc.atk+'</span></div>'+
+        '<div class="pp-stat"><span class="s-label">DEF</span><span class="s-val" style="color:'+cc.color+'">'+cc.def+'</span></div>'+
+        '<div class="pp-stat"><span class="s-label">ECO</span><span class="s-val" style="color:'+cc.color+'">'+cc.eco+'</span></div>'+
+        '<div class="pp-stat"><span class="s-label">NAVY</span><span class="s-val" style="color:'+cc.color+'">'+cc.nav+'</span></div>'+
+        '<div class="pp-stat"><span class="s-label">TERR</span><span class="s-val" style="color:'+cc.color+'">'+nterr+'</span></div>';
+      document.getElementById('pickBtns').style.display='flex';
+      G.selected=cid;
+    }
+    return;
+  }
+  if(G.paused||G.won||G.lost)return;
+  const tid=getTerrAt(sx,sy);
+  if(tid<0){
+    G.attackFrom=-1;
+    document.getElementById('infoPanel').style.display='none';
+    return;
+  }
+  const t=G.terrs[tid];
+  if(t.owner===G.player&&t.army>0&&!t.isWater){
+    if(G.attackFrom===tid){G.attackFrom=-1;return;}
+    G.attackFrom=tid;
+    G.selected=tid;
+  }else if(G.attackFrom>=0&&canAttack(G.attackFrom,tid)){
+    executeBattle(G.attackFrom,tid);
+    G.attackFrom=-1;
+  }else{
+    G.selected=tid;
+    G.attackFrom=-1;
+    showInfo(tid);
+  }
+}
+
+function confirmPick(){
+  if(G.selected<0)return;
+  G.player=G.selected;
+  G.lastPlayer=G.selected;
+  G.picking=false;
+  startPlaying();
+}
+
+function closePick(){
+  G.picking=false;
+  G.selected=-1;
+  document.getElementById('pickOverlay').classList.remove('active');
+  document.getElementById('topBar').style.display='flex';
+  G.paused=false;
+  // Auto-pick first country if none selected
+  if(G.player<0){
+    G.player=0;
+    G.lastPlayer=0;
+  }
+}
+
+// ---- COMBAT ----
+function canAttack(fromId,toId){
+  const from=G.terrs[fromId],to=G.terrs[toId];
+  if(!from||!to)return false;
+  if(from.owner<0||to.owner<0)return false;
+  if(from.owner===to.owner)return false;
+  if(from.army<=5)return false;
+  if(from.isWater||to.isWater)return false;
+  if(!from.neighbors.includes(toId)&&!to.neighbors.includes(fromId))return false;
+  const st=getStatus(from.owner,to.owner);
+  if(st==='allied')return false;
+  return true;
+}
+
+function executeBattle(fromId,toId){
+  const from=G.terrs[fromId],to=G.terrs[toId];
+  if(!from||!to)return false;
+  const atkC=COUNTRIES[from.owner],defC=COUNTRIES[to.owner];
+  const sent=Math.min(from.army,Math.floor(from.army*0.5)+10);
+  if(sent<5)return false;
+  from.army-=sent;
+
+  // Water crossing penalty
+  const direct=from.neighbors.includes(toId);
+  const waterPenalty=direct?1:(1-atkC.nav*0.04);
+
+  const atkPow=sent*(atkC.atk/10)*waterPenalty;
+  const defPow=to.army*(defC.def/10)*1.3+(to.isCapital?40:0);
+
+  addEffect((from.center[0]+to.center[0])/2,(from.center[1]+to.center[1])/2,'battle',25);
+
+  if(atkPow>defPow){
+    const rem=Math.max(1,Math.floor((atkPow-defPow)*0.25));
+    const oldOwner=to.owner;
+    to.owner=from.owner;
+    to.army=Math.min(rem,sent);
+    addMsg(COUNTRIES[from.owner].name+' captured '+to.name+'!');
+    if(oldOwner>=0&&oldOwner!==from.owner){
+      const alive=G.terrs.some(t=>t.owner===oldOwner&&!t.isWater);
+      if(!alive){
+        G.countries[oldOwner].alive=false;
+        addMsg(COUNTRIES[oldOwner].name+' has been DEFEATED!');
+        if(oldOwner===G.player){G.lost=true;showVic(false);}
+      }
+    }
+    checkVic();
+    return true;
+  }else{
+    const losses=Math.min(to.army,Math.floor(sent*0.15));
+    to.army=Math.max(1,to.army-losses);
+    addMsg(COUNTRIES[from.owner].name+' attacked '+to.name+' and failed.');
+    return false;
+  }
+}
+
+function checkVic(){
+  if(G.player<0)return;
+  const alive=G.countries.filter(c=>c.alive);
+  if(alive.length<=1&&G.countries[G.player].alive){
+    G.won=true;
+    showVic(true);
+  }
+}
+
+function showVic(won){
+  G.paused=true;
+  document.getElementById('vicScreen').style.display='flex';
+  if(won){
+    document.getElementById('vicTitle').textContent='🏆 VICTORY!';
+    document.getElementById('vicText').textContent='You conquered all territories as '+COUNTRIES[G.player].name+'!';
+  }else{
+    document.getElementById('vicTitle').textContent='💀 DEFEAT';
+    document.getElementById('vicText').textContent=COUNTRIES[G.player].name+' has been wiped out!';
+  }
+}
+
+// ---- DIPLOMACY ----
+function getStatus(a,b){
+  if(a===b)return 'self';
+  const d=G.diplomacy;
+  if(d.alliances[a].has(b))return 'allied';
+  if(d.wars[a].has(b))return 'war';
+  return 'peace';
+}
+
+function declareWar(a,b){
+  G.diplomacy.wars[a].add(b);G.diplomacy.wars[b].add(a);
+  G.diplomacy.alliances[a].delete(b);G.diplomacy.alliances[b].delete(a);
+  if(a===G.player||b===G.player){
+    const an=COUNTRIES[a].name,bn=COUNTRIES[b].name;
+    addMsg('⚔ WAR: '+an+' declared war on '+bn+'!');
+  }
+}
+function formAlliance(a,b){
+  if(G.diplomacy.wars[a].has(b))return;
+  G.diplomacy.alliances[a].add(b);G.diplomacy.alliances[b].add(a);
+  if(a===G.player||b===G.player)
+    addMsg('🤝 '+COUNTRIES[a].name+' and '+COUNTRIES[b].name+' formed an alliance!');
+}
+function makePeace(a,b){
+  G.diplomacy.wars[a].delete(b);G.diplomacy.wars[b].delete(a);
+  if(a===G.player||b===G.player)
+    addMsg('☮ Peace between '+COUNTRIES[a].name+' and '+COUNTRIES[b].name+'.');
+}
+
+function showDiplomacy(){
+  const p=document.getElementById('dipPanel');
+  const l=document.getElementById('dipList');
+  l.innerHTML='';
+  for(let i=0;i<NC;i++){
+    if(i===G.player||!G.countries[i].alive)continue;
+    const cc=COUNTRIES[i];
+    const st=getStatus(G.player,i);
+    const row=document.createElement('div');row.className='dr';
+    let stxt='Peace',scls='peace';
+    if(st==='war'){stxt='⚔ WAR';scls='war'}
+    if(st==='allied'){stxt='🤝 ALLIED';scls='allied'}
+    let acts='';
+    if(st!=='war')acts+=`<button class="bw" onclick="playerAct(${i},'war')">⚔ War</button>`;
+    else acts+=`<button onclick="playerAct(${i},'peace')">☮ Peace</button>`;
+    if(st==='peace')acts+=`<button class="ba" onclick="playerAct(${i},'ally')">🤝 Ally</button>`;
+    if(st==='allied')acts+=`<button onclick="playerAct(${i},'break')">✕ Break</button>`;
+    row.innerHTML=`<div class="dn"><span class="dfl" style="background:${cc.color}"></span>${cc.name}</div><span class="ds ${scls}">${stxt}</span><div class="da">${acts}</div>`;
+    l.appendChild(row);
+  }
+  p.style.display='block';
+}
+
+function closeDiplomacy(){document.getElementById('dipPanel').style.display='none';}
+
+let dipTarget=-1,dipAction='';
+function playerAct(cid,act){
+  dipTarget=cid;dipAction=act;
+  if(act==='war'||act==='ally'){
+    const word=act==='war'?'declare war on':'form alliance with';
+    document.getElementById('warText').textContent=word.toUpperCase()+' '+COUNTRIES[cid].name+'?';
+    document.getElementById('warConfirm').style.display='block';
+  }else if(act==='peace'){
+    makePeace(G.player,cid);showDiplomacy();
+  }else if(act==='break'){
+    G.diplomacy.alliances[G.player].delete(cid);
+    G.diplomacy.alliances[cid].delete(G.player);
+    showDiplomacy();
+  }
+}
+function doDipAction(){
+  if(dipAction==='war')declareWar(G.player,dipTarget);
+  else if(dipAction==='ally')formAlliance(G.player,dipTarget);
+  document.getElementById('warConfirm').style.display='none';
+  showDiplomacy();
+}
+function cancelWar(){document.getElementById('warConfirm').style.display='none';dipTarget=-1;}
+
+// ---- AI ----
+function runAI(){
+  if(G.paused||G.won||G.lost)return;
+  for(let cid=0;cid<NC;cid++){
+    if(cid===G.player||!G.countries[cid].alive)continue;
+    const terrs=G.terrs.filter(t=>t.owner===cid&&!t.isWater);
+    if(terrs.length===0){G.countries[cid].alive=false;continue;}
+
+    // Attack
+    const totalArmy=terrs.reduce((s,t)=>s+t.army,0);
+    if(totalArmy<15)continue;
+
+    let targets=[];
+    for(const t of terrs){
+      for(const nid of t.neighbors){
+        const n=G.terrs[nid];
+        if(!n||n.isWater||n.owner===cid)continue;
+        const st=getStatus(cid,n.owner);
+        if(st==='allied')continue;
+        const bonus=(G.countries[n.owner]?COUNTRIES[n.owner].def:5)*1.5+(n.isCapital?40:0);
+        if(t.army>n.army*1.1+bonus*0.4)
+          targets.push({from:t,to:n,fid:t.id,tid:nid,score:t.army/(n.army+1)});
+      }
+    }
+    targets.sort((a,b)=>b.score-a.score);
+    let done=0;
+    for(const tg of targets){
+      if(done>=2)break;
+      if(tg.from.army<10)continue;
+      if(executeBattle(tg.fid,tg.tid))done++;
+    }
+
+    // AI diplomacy
+    if(Math.random()<0.12){
+      const enemies=[];
+      for(let i=0;i<NC;i++)if(i!==cid&&G.countries[i].alive&&getStatus(cid,i)==='peace')enemies.push(i);
+      if(enemies.length>0){
+        const e=enemies[Math.floor(Math.random()*enemies.length)];
+        const ms=totalArmy+terrs.length*10;
+        const ts=G.terrs.filter(t=>t.owner===e&&!t.isWater).reduce((s,t)=>s+t.army,0)+G.terrs.filter(t=>t.owner===e&&!t.isWater).length*10;
+        if(ms>ts*1.4||Math.random()<0.15)declareWar(cid,e);
+      }
+    }
+    if(Math.random()<0.08){
+      const allies=[];
+      for(let i=0;i<NC;i++)if(i!==cid&&G.countries[i].alive&&getStatus(cid,i)==='peace'){
+        const ts=G.terrs.filter(t=>t.owner===i&&!t.isWater).reduce((s,t)=>s+t.army,0)+G.terrs.filter(t=>t.owner===i&&!t.isWater).length*10;
+        if(ts>totalArmy*1.3)allies.push(i);
+      }
+      if(allies.length>0){const a=allies[Math.floor(Math.random()*allies.length)];if(Math.random()<0.35)formAlliance(cid,a);}
+    }
+  }
+}
+
+// ---- EFFECTS & MESSAGES ----
+function addEffect(x,y,type,dur){
+  G.effects.push({x,y,type,time:0,dur});
+}
+function addMsg(m){
+  G.msgs.unshift(m);
+  if(G.msgs.length>15)G.msgs.pop();
+}
+
+// ---- INFO PANEL ----
+function showInfo(tid){
+  if(tid<0){document.getElementById('infoPanel').style.display='none';return;}
+  const t=G.terrs[tid];
+  const p=document.getElementById('infoPanel');
+  document.getElementById('infoTitle').textContent=t.name;
+  document.getElementById('infoOwner').textContent=t.owner>=0?COUNTRIES[t.owner].name:'None';
+  document.getElementById('infoArmy').textContent=Math.floor(t.army);
+  document.getElementById('infoIncome').textContent=Math.floor(t.dev*2);
+  document.getElementById('infoType').textContent=t.isWater?'Sea':(t.isCapital?'Capital':'Land');
+  p.style.display='block';
+}
+
+// ---- UI CONTROLS ----
+function togglePause(){
+  G.paused=!G.paused;
+  document.getElementById('pauseBtn').textContent=G.paused?'▶ PLAY':'⏸ PAUSE';
+}
+function setSpeed(s){
+  G.speed=s;
+  ['sp1','sp2','sp3'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById('sp'+s).classList.add('active');
+  saveSettings();
+}
+
+function restartGame(){
+  document.getElementById('vicScreen').style.display='none';
+  document.getElementById('dipPanel').style.display='none';
+  document.getElementById('warConfirm').style.display='none';
+  const prevPlayer=G.lastPlayer>=0?G.lastPlayer:G.player;
+  if(G.mapIdx>=0){initMap(G.mapIdx);G.player=prevPlayer>=0?prevPlayer:0;G.picking=false;startPlaying();}
+  else showMapSelect();
+}
+
+function goMapSelect(){
+  document.getElementById('vicScreen').style.display='none';
+  document.getElementById('dipPanel').style.display='none';
+  document.getElementById('infoPanel').style.display='none';
+  document.getElementById('pickOverlay').classList.remove('active');
+  showMapSelect();
+}
+
+// ---- INPUT ----
+function initInput(){
+  const c=canvas;
+  let mx,my;
+  c.addEventListener('mousedown',e=>{
+    const rect=c.getBoundingClientRect();
+    const sx=(e.clientX-rect.left)*c.width/rect.width;
+    const sy=(e.clientY-rect.top)*c.height/rect.height;
+    if(G.picking){
+      const tid=getTerrAt(sx,sy);
+      if(tid<0){G.dragging=true;G.dragSX=e.clientX;G.dragSY=e.clientY;G.camSX=G.camera.tx;G.camSY=G.camera.ty;}
+      else onCanvasClick(sx,sy);
+      return;
+    }
+    if(e.button===0){
+      const tid=getTerrAt(sx,sy);
+      if(tid<0||(G.terrs[tid]&&G.terrs[tid].owner!==G.player)){
+        G.dragging=true;
+        G.dragSX=e.clientX;G.dragSY=e.clientY;
+        G.camSX=G.camera.tx;G.camSY=G.camera.ty;
+      }
+      onCanvasClick(sx,sy);
+    }
+  });
+  c.addEventListener('mousemove',e=>{
+    const rect=c.getBoundingClientRect();
+    const sx=(e.clientX-rect.left)*c.width/rect.width;
+    const sy=(e.clientY-rect.top)*c.height/rect.height;
+    G.mx=sx;G.my=sy;
+    if(G.dragging){
+      const dx=(e.clientX-G.dragSX)/G.camera.zoom;
+      const dy=(e.clientY-G.dragSY)/G.camera.zoom;
+      G.camera.tx=G.camSX-dx;
+      G.camera.ty=G.camSY-dy;
+    }else if(!G.picking){
+      const tid=getTerrAt(sx,sy);
+      G.hovered=tid;
+    }
+  });
+  c.addEventListener('mouseup',()=>{G.dragging=false;});
+  c.addEventListener('mouseleave',()=>{G.dragging=false;G.hovered=-1;});
+  c.addEventListener('wheel',e=>{
+    e.preventDefault();
+    G.camera.tz=Math.max(0.2,Math.min(2.0,G.camera.tz*(e.deltaY>0?0.9:1.1)));
+  },{passive:false});
+  c.addEventListener('contextmenu',e=>{e.preventDefault();G.attackFrom=-1;});
+
+  // Touch
+  let t0=null,t1=null,ld=0,touchMoved=false;
+  c.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    touchMoved=false;
+    if(e.touches.length===1){
+      t0={x:e.touches[0].clientX,y:e.touches[0].clientY};
+    }else if(e.touches.length===2){
+      t1=e.touches;ld=Math.hypot(t1[0].clientX-t1[1].clientX,t1[0].clientY-t1[1].clientY);
+    }
+  },{passive:false});
+  c.addEventListener('touchmove',e=>{
+    e.preventDefault();
+    touchMoved=true;
+    if(e.touches.length===1&&t0){
+      const dx=(e.touches[0].clientX-t0.x)/G.camera.zoom;
+      const dy=(e.touches[0].clientY-t0.y)/G.camera.zoom;
+      G.camera.tx-=dx;G.camera.ty-=dy;
+      t0={x:e.touches[0].clientX,y:e.touches[0].clientY};
+    }else if(e.touches.length===2){
+      const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      if(ld>0)G.camera.tz=Math.max(0.2,Math.min(2.0,G.camera.tz*(d/ld)));
+      ld=d;
+    }
+  },{passive:false});
+  c.addEventListener('touchend',e=>{
+    e.preventDefault();
+    if(!touchMoved&&e.changedTouches.length===1&&t0){
+      const rect=c.getBoundingClientRect();
+      const sx=(e.changedTouches[0].clientX-rect.left)*c.width/rect.width;
+      const sy=(e.changedTouches[0].clientY-rect.top)*c.height/rect.height;
+      onCanvasClick(sx,sy);
+    }
+    t0=null;ld=0;
+  },{passive:false});
+
+  // Minimap click
+  document.getElementById('minimapWrap').addEventListener('click',e=>{
+    const rect=mCanvas.getBoundingClientRect();
+    const rx=(e.clientX-rect.left)*mCanvas.width/rect.width;
+    const ry=(e.clientY-rect.top)*mCanvas.height/rect.height;
+    G.camera.tx=(rx/mCanvas.width)*VW;
+    G.camera.ty=(ry/mCanvas.height)*VH;
+  });
+}
+
+// ---- CAMERA ----
+function updateCam(){
+  const c=G.camera;
+  if(G.keys['w']||G.keys['W'])c.ty-=18/c.zoom;
+  if(G.keys['s']||G.keys['S'])c.ty+=18/c.zoom;
+  if(G.keys['a']||G.keys['A'])c.tx-=18/c.zoom;
+  if(G.keys['d']||G.keys['D'])c.tx+=18/c.zoom;
+  c.x+=(c.tx-c.x)*0.1;
+  c.y+=(c.ty-c.y)*0.1;
+  c.zoom+=(c.tz-c.zoom)*0.1;
+}
+
+// ---- GAME TICK ----
+function tick(){
+  G.turn++;
+
+  // Army growth for all territories
+  for(const t of G.terrs){
+    if(t.isWater||t.owner<0)continue;
+    const growth = Math.max(1, Math.floor(t.dev * 0.7 + G.countries[t.owner].eco * 0.12));
+    t.army += growth;
+  }
+
+  // Income / war score
+  for(let cid=0;cid<NC;cid++){
+    if(!G.countries[cid].alive)continue;
+    const inc=G.terrs.filter(t=>t.owner===cid&&!t.isWater).reduce((s,t)=>s+t.dev*(G.countries[cid].eco*0.3+1),0);
+    G.warScore+=(cid===G.player)?inc*0.01:0;
+  }
+
+  runAI();
+  for(let i=G.effects.length-1;i>=0;i--){
+    G.effects[i].time++;
+    if(G.effects[i].time>G.effects[i].dur)G.effects.splice(i,1);
+  }
+}
+
+// ---- RENDER ----
+function render(){
+  const c=ctx;
+  c.fillStyle='#0a1628';c.fillRect(0,0,W,H);
+  const cam=G.camera;
+  c.save();
+  c.translate(W/2,H/2);
+  c.scale(cam.zoom,cam.zoom);
+  c.translate(-cam.x,-cam.y);
+
+  // Sea
+  c.fillStyle='#0d1f3c';c.fillRect(-5000,-5000,10000,10000);
+
+  // Territories
+  for(let i=0;i<G.terrs.length;i++){
+    const t=G.terrs[i];
+    if(!t.pts||t.pts.length<2)continue;
+    const col=t.owner>=0?COUNTRIES[t.owner].color:'#1a2a4a';
+    c.fillStyle=t.isWater?'#0f2442':col;
+    c.strokeStyle=t.isWater?'rgba(255,255,255,0.04)':'rgba(255,255,255,0.22)';
+    c.lineWidth=t.isWater?0.5:2.5;
+    if(i===G.selected||i===G.attackFrom){
+      c.shadowColor=i===G.selected?'#fff':COUNTRIES[G.player>=0?G.player:0].color;
+      c.shadowBlur=18;
+    }else if(i===G.hovered&&!G.picking){
+      c.shadowColor='rgba(255,255,255,0.25)';
+      c.shadowBlur=8;
+    }
+    c.beginPath();c.moveTo(t.pts[0][0],t.pts[0][1]);
+    for(let j=1;j<t.pts.length;j++)c.lineTo(t.pts[j][0],t.pts[j][1]);
+    c.closePath();c.fill();c.stroke();
+    c.shadowBlur=0;
+
+    // Capital marker
+    if(t.isCapital&&!t.isWater){
+      c.fillStyle='rgba(255,255,255,0.5)';
+      c.font='18px Arial';c.textAlign='center';c.textBaseline='middle';
+      c.fillText('★',t.center[0],t.center[1]-20);
+    }
+  }
+
+  // Labels
+  for(const t of G.terrs){
+    if(t.isWater)continue;
+    c.fillStyle='rgba(255,255,255,0.85)';
+    c.font='bold 12px Arial';c.textAlign='center';c.textBaseline='middle';
+    c.shadowColor='rgba(0,0,0,0.9)';c.shadowBlur=5;
+    c.fillText(t.name,t.center[0],t.center[1]-10);
+    if(t.army>0&&t.owner>=0){
+      c.fillStyle='#fff';
+      c.font='bold 15px Arial';c.shadowBlur=4;
+      c.fillText('⚔'+Math.floor(t.army),t.center[0],t.center[1]+14);
+    }
+    c.shadowBlur=0;
+  }
+
+  // Attack arc indicator
+  if(G.attackFrom>=0&&!G.picking){
+    const from=G.terrs[G.attackFrom];
+    c.strokeStyle='rgba(255,255,255,0.5)';c.lineWidth=2.5;c.setLineDash([8,6]);
+    c.beginPath();c.arc(from.center[0],from.center[1],28+Math.sin(G.time*0.08)*4,0,Math.PI*2);c.stroke();c.setLineDash([]);
+  }
+  if(G.attackFrom>=0&&G.hovered>=0&&G.hovered!==G.attackFrom&&canAttack(G.attackFrom,G.hovered)){
+    const from=G.terrs[G.attackFrom],to=G.terrs[G.hovered];
+    c.strokeStyle='rgba(255,200,50,0.4)';c.lineWidth=2;c.setLineDash([6,4]);
+    c.beginPath();c.moveTo(from.center[0],from.center[1]);c.lineTo(to.center[0],to.center[1]);c.stroke();c.setLineDash([]);
+    // Arrowhead
+    const dx=to.center[0]-from.center[0],dy=to.center[1]-from.center[1];
+    const a=Math.atan2(dy,dx);
+    c.fillStyle='rgba(255,200,50,0.5)';
+    c.beginPath();c.moveTo(to.center[0],to.center[1]);
+    c.lineTo(to.center[0]-18*Math.cos(a-0.4),to.center[1]-18*Math.sin(a-0.4));
+    c.lineTo(to.center[0]-18*Math.cos(a+0.4),to.center[1]-18*Math.sin(a+0.4));
+    c.closePath();c.fill();
+  }
+
+  // Battle effects
+  for(const ef of G.effects){
+    if(ef.type==='battle'){
+      const p=ef.time/ef.dur;
+      const r=12+p*22,a=1-p;
+      const grad=c.createRadialGradient(ef.x,ef.y,0,ef.x,ef.y,r);
+      grad.addColorStop(0,`rgba(255,200,100,${a*0.8})`);
+      grad.addColorStop(0.4,`rgba(255,100,50,${a*0.5})`);
+      grad.addColorStop(1,`rgba(255,50,0,0)`);
+      c.fillStyle=grad;
+      c.beginPath();c.arc(ef.x,ef.y,r,0,Math.PI*2);c.fill();
+    }
+  }
+
+  c.restore();
+}
+
+// ---- MINIMAP ----
+function renderMini(){
+  const m=mCtx;
+  const mw=mCanvas.width,mh=mCanvas.height;
+  m.fillStyle='#0a1628';m.fillRect(0,0,mw,mh);
+  const sx=mw/VW,sy=mh/VH;
+  for(const t of G.terrs){
+    if(!t.pts||t.pts.length<2)continue;
+    const col=t.owner>=0?COUNTRIES[t.owner].color:'#1a2a4a';
+    m.fillStyle=t.isWater?'#0d1f3c':col;
+    m.strokeStyle='rgba(255,255,255,0.12)';m.lineWidth=0.5;
+    m.beginPath();m.moveTo(t.pts[0][0]*sx,t.pts[0][1]*sy);
+    for(let i=1;i<t.pts.length;i++)m.lineTo(t.pts[i][0]*sx,t.pts[i][1]*sy);
+    m.closePath();m.fill();m.stroke();
+  }
+  const cam=G.camera;
+  const vw=W/cam.zoom,vh=H/cam.zoom;
+  m.strokeStyle='rgba(255,255,255,0.5)';m.lineWidth=1.5;
+  m.strokeRect((cam.x-vw/2)*sx,(cam.y-vh/2)*sy,vw*sx,vh*sy);
+}
+
+// ---- UI UPDATE ----
+function updateUI(){
+  if(G.player<0||G.picking){document.getElementById('topBar').style.display='none';return;}
+  document.getElementById('topBar').style.display='flex';
+  const cc=COUNTRIES[G.player];
+  document.getElementById('pFlag').style.background=cc.color;
+  document.getElementById('pName').textContent=cc.name;
+  const pop=G.terrs.filter(t=>t.owner===G.player&&!t.isWater).reduce((s,t)=>s+t.army*0.5+t.dev*200,0);
+  const inc=G.terrs.filter(t=>t.owner===G.player&&!t.isWater).reduce((s,t)=>s+t.dev*(cc.eco*0.3+1),0);
+  const totA=G.terrs.filter(t=>t.owner===G.player&&!t.isWater).reduce((s,t)=>s+t.army,0);
+  const nT=G.terrs.filter(t=>t.owner===G.player&&!t.isWater).length;
+  document.getElementById('statPop').textContent=fmt(pop);
+  document.getElementById('statMoney').textContent=fmt(inc);
+  document.getElementById('statArmy').textContent=fmt(totA);
+  document.getElementById('statTerr').textContent=nT;
+}
+
+function fmt(n){
+  if(n>=1e6)return (n/1e6).toFixed(1)+'M';
+  if(n>=1e3)return (n/1e3).toFixed(1)+'K';
+  return Math.floor(n).toString();
+}
+
+// ---- HUD (messages, labels, crosshair) ----
+function renderHUD(){
+  const c=ctx;
+  // Messages (on canvas since we don't have a separate hud canvas)
+  c.save();
+  c.font='12px Arial';c.textAlign='left';c.textBaseline='top';
+  for(let i=0;i<Math.min(G.msgs.length,6);i++){
+    c.fillStyle=`rgba(255,255,255,${0.6-i*0.08})`;
+    c.fillText(G.msgs[i],14,75+i*17);
+  }
+  c.restore();
+
+  // Attack hint
+  if(G.attackFrom>=0&&!G.picking&&!G.paused){
+    const t=G.terrs[G.attackFrom];
+    if(t){
+      const [sx,sy]=worldToScr(t.center[0],t.center[1]);
+      c.save();
+      c.fillStyle='rgba(255,200,50,0.8)';
+      c.font='bold 13px Arial';c.textAlign='center';c.textBaseline='bottom';
+      c.shadowColor='rgba(0,0,0,0.8)';c.shadowBlur=4;
+      c.fillText('⚔ Click enemy territory to attack',sx,sy-35);
+      c.shadowBlur=0;
+      c.restore();
+    }
+  }
+}
+
+// ---- GAME LOOP ----
+function loop(time){
+  updateCam();
+  if(!G.picking&&!G.paused&&!G.won&&!G.lost){
+    G.time+=16;
+    const interval=1000/G.speed;
+    G.tickAcc+=16;
+    while(G.tickAcc>=interval){G.tickAcc-=interval;tick();}
+  }
+  render();
+  renderMini();
+  renderHUD();
+  updateUI();
+  requestAnimationFrame(loop);
+}
+
+// ---- START ----
+setup();
+</script>
+</body>
+</html>
